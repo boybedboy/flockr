@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../api.dart';
+import '../languages.dart';
 import '../theme.dart';
 import 'home.dart';
 
@@ -14,6 +15,7 @@ class _StartScreenState extends State<StartScreen> {
   bool guide = false, busy = false, consent = false;
   String? error;
   String careGroup = 'adult';
+  String lang = 'th';
   final code = TextEditingController(), name = TextEditingController(), phone = TextEditingController();
   final email = TextEditingController(), password = TextEditingController();
 
@@ -41,6 +43,7 @@ class _StartScreenState extends State<StartScreen> {
           'code': code.text.trim(),
           'name': name.text.trim(),
           'careGroup': careGroup,
+          'language': lang,
           'emergencyPhone': phone.text.trim(),
           'consent': true,
         });
@@ -95,6 +98,13 @@ class _StartScreenState extends State<StartScreen> {
           if (!guide) ...[
             TextField(controller: code, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'รหัสเข้าร่วมทริป (6 ตัว)')),
             TextField(controller: name, decoration: const InputDecoration(labelText: 'ชื่อ')),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: lang,
+              decoration: const InputDecoration(labelText: 'ภาษาที่อ่านแชท / Chat language'),
+              items: [for (final l in Lang.all) DropdownMenuItem(value: l.code, child: Text('${l.flag}  ${l.name}'))],
+              onChanged: (v) => setState(() => lang = v ?? 'th'),
+            ),
             const SizedBox(height: 12),
             const Text('กลุ่มการดูแล'),
             Wrap(spacing: 6, children: [

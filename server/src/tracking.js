@@ -1,6 +1,7 @@
 import { q, tx } from './db.js';
 import { evaluate, signalLost, CARE_GROUPS } from './geo.js';
 import { broadcast } from './realtime.js';
+import { translateInBackground } from './chatTranslate.js';
 
 const point = (p) => `SRID=4326;POINT(${Number(p.lng)} ${Number(p.lat)})`;
 
@@ -9,7 +10,8 @@ export async function postSystemMessage(db, tripId, body, meta) {
     `INSERT INTO messages(trip_id, sender_kind, body, meta) VALUES ($1,'system',$2,$3) RETURNING *`,
     [tripId, body, meta],
   );
-  broadcast(tripId, 'message', rows[0]);
+  broadcast(tripId, 'message', { ...rows[0], translations: {} });
+  translateInBackground(rows[0]);
   return rows[0];
 }
 

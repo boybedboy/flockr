@@ -16,6 +16,8 @@ const step = (s) => console.log('✔', s);
 const center = { lat: 18.8048, lng: 98.9216 };
 const north = (m) => ({ lat: center.lat + m / 111195, lng: center.lng });
 
+const uid = '04' + Date.now().toString(16).toUpperCase();
+const bleId = 'BLE-' + Date.now().toString(36).toUpperCase();
 const email = `guide${Date.now()}@example.com`;
 const { token: staff } = await call('POST', '/api/auth/signup', { company: 'ทัวร์ทดสอบ', name: 'พี่ต้น', email, password: 'password123' });
 step('signup guide');
@@ -35,17 +37,17 @@ const kid = await call('POST', `/api/trips/${trip.id}/members`, { name: 'ภู�
 step(`kid added as ${kid.care_group}`);
 
 const [card] = await call('POST', '/api/cards/batch', { count: 1, kind: 'ble' }, staff);
-await call('POST', `/api/cards/${card.public_code}/chip`, { uid: '04a1b2c3d4e5f6', bleId: 'ble-a7-3f-21' }, staff);
-await call('POST', '/api/cards/bind', { uid: '04A1B2C3D4E5F6', memberId: kid.id }, staff);
+await call('POST', `/api/cards/${card.public_code}/chip`, { uid, bleId }, staff);
+await call('POST', '/api/cards/bind', { uid, memberId: kid.id }, staff);
 step('card written and bound to kid');
 
 const r1 = await call('POST', '/api/me/position', north(80), adult.token);
 if (r1.state !== 'in') throw new Error('adult at 80 m should be in');
-const r2 = await call('POST', '/api/sightings', { ...north(80), tags: [{ bleId: 'BLE-A7-3F-21' }] }, staff);
+const r2 = await call('POST', '/api/sightings', { ...north(80), tags: [{ bleId }] }, staff);
 if (r2[0]?.state !== 'out') throw new Error('kid at 80 m should be out: ' + JSON.stringify(r2));
 step('geofence: adult in, kid out at 80 m');
 
-const scan = await call('POST', '/api/cards/scan', { uid: '04a1b2c3d4e5f6', checkIn: true }, staff);
+const scan = await call('POST', '/api/cards/scan', { uid: uid.toLowerCase(), checkIn: true }, staff);
 step(`scan -> ${scan.name}, checked in`);
 const pub = await call('GET', `/api/public/cards/${card.public_code}`);
 if (pub.medical_note !== undefined || pub.emergency_phone !== '089-555-1234') throw new Error('public card leaks data');
@@ -54,9 +56,16 @@ await call('POST', `/api/public/cards/${card.public_code}/found`, { ...north(40)
 
 await call('POST', `/api/trips/${trip.id}/messages`, { body: 'เจอกันลานจอดรถ 10:30' }, staff);
 await call('POST', `/api/trips/${trip.id}/messages`, { body: 'รับทราบค่ะ' }, adult.token);
+const zh = await call('POST', '/api/join', { code: trip.join_code, name: 'Li Wei', language: 'zh', consent: true });
+await call('POST', `/api/trips/${trip.id}/messages`, { body: '我们在哪里集合？', lang: 'zh' }, zh.token);
+const langs = await call('GET', '/api/languages');
+step(`chinese tourist joined; translation ${langs.translation ? 'ON' : 'OFF (no ANTHROPIC_API_KEY)'}`);
+if (langs.translation) await new Promise((r) => setTimeout(r, 8000));
 const msgs = await call('GET', `/api/trips/${trip.id}/messages`, null, adult.token);
+if (!msgs.every((m) => m.translations && m.lang)) throw new Error('messages missing lang/translations');
 step(`chat has ${msgs.length} messages (incl. system alerts)`);
-msgs.forEach((m) => console.log('   ', m.sender_kind.padEnd(6), m.sender_name ?? '', m.body));
+msgs.forEach((m) => console.log('   ', m.sender_kind.padEnd(6), `[${m.lang}]`, m.sender_name ?? '', m.body,
+  Object.keys(m.translations).length ? JSON.stringify(m.translations) : ''));
 
 await new Promise((r) => setTimeout(r, 300));
 const alerts = events.filter((e) => e.type === 'alert').map((e) => e.data.kind);

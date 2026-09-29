@@ -18,6 +18,8 @@ class ApiError implements Exception {
 /// Session: either a guide (kind=staff) or a tourist (kind=member), plus the current trip.
 class Session {
   String? token, kind, tripId, memberId;
+  /// Language this person reads chat in; also the default for sending.
+  String lang = 'th';
 
   static final instance = Session();
 
@@ -27,17 +29,19 @@ class Session {
     kind = p.getString('kind');
     tripId = p.getString('tripId');
     memberId = p.getString('memberId');
+    lang = p.getString('lang') ?? 'th';
   }
 
   Future<void> save() async {
     final p = await SharedPreferences.getInstance();
-    for (final e in {'token': token, 'kind': kind, 'tripId': tripId, 'memberId': memberId}.entries) {
+    for (final e in {'token': token, 'kind': kind, 'tripId': tripId, 'memberId': memberId, 'lang': lang}.entries) {
       e.value == null ? await p.remove(e.key) : await p.setString(e.key, e.value!);
     }
   }
 
   Future<void> clear() async {
     token = kind = tripId = memberId = null;
+    lang = 'th';
     await save();
   }
 
@@ -62,7 +66,8 @@ class Api {
     final r = await call('POST', '/api/auth/login', {'email': email, 'password': password});
     _s
       ..token = r['token']
-      ..kind = 'staff';
+      ..kind = 'staff'
+      ..lang = r['staff']['language'] ?? 'th';
     await _s.save();
   }
 
@@ -72,14 +77,21 @@ class Api {
       ..token = r['token']
       ..kind = 'member'
       ..tripId = r['trip']['id']
-      ..memberId = r['member']['id'];
+      ..memberId = r['member']['id']
+      ..lang = r['member']['language'] ?? 'th';
     await _s.save();
   }
 
   static Future<List> trips() async => await call('GET', '/api/trips') as List;
   static Future<Map> trip(String id) async => await call('GET', '/api/trips/$id') as Map;
   static Future<List> messages(String id) async => await call('GET', '/api/trips/$id/messages') as List;
-  static Future send(String id, String body) => call('POST', '/api/trips/$id/messages', {'body': body});
+  static Future send(String id, String body, String lang) => call('POST', '/api/trips/$id/messages', {'body': body, 'lang': lang});
+
+  static Future<void> setLanguage(String lang) async {
+    await call('PUT', '/api/me/language', {'language': lang});
+    _s.lang = lang;
+    await _s.save();
+  }
   static Future setRadius(String id, int m) => call('PATCH', '/api/trips/$id', {'baseRadiusM': m});
 
   static Future sendPosition(double lat, double lng, double acc) {

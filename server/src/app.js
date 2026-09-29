@@ -4,6 +4,8 @@ import { hashPassword, verifyPassword, sign, requireAuth, randomCode } from './a
 import { isCareGroup, groupForAge, CARE_GROUPS } from './geo.js';
 import { recordPosition, postSystemMessage } from './tracking.js';
 import { broadcast } from './realtime.js';
+import { LANGUAGES, isLanguage, translationEnabled } from './translate.js';
+import { translateInBackground } from './chatTranslate.js';
 
 const staff = requireAuth('staff');
 const member = requireAuth('member');
@@ -40,6 +42,17 @@ export function createApp() {
 
   app.get('/health', (req, res) => res.json({ ok: true }));
   app.get('/api/care-groups', (req, res) => res.json(CARE_GROUPS));
+  app.get('/api/languages', (req, res) => res.json({ languages: LANGUAGES, translation: translationEnabled() }));
+
+  // The language this person reads chat in.
+  app.put('/api/me/language', anyone, h(async (req, res) => {
+    const { language } = req.body ?? {};
+    if (!isLanguage(language)) return bad(res, `language must be one of ${Object.keys(LANGUAGES).join(', ')}`);
+    await (req.auth.kind === 'staff'
+      ? q('UPDATE staff SET language=$2 WHERE id=$1', [req.auth.staffId, language])
+      : q('UPDATE members SET language=$2 WHERE id=$1', [req.auth.memberId, language]));
+    res.json({ language });
+  }));
 
   // ---------- staff accounts ----------
   app.post('/api/auth/signup', h(async (req, res) => {
@@ -60,7 +73,7 @@ export function createApp() {
     const { email, password } = req.body ?? {};
     const { rows: [s] } = await q('SELECT * FROM staff WHERE email=lower($1)', [email ?? '']);
     if (!s || !(await verifyPassword(password ?? '', s.password_hash))) return bad(res, 'wrong email or password', 401);
-    res.json({ token: sign({ kind: 'staff', staffId: s.id, companyId: s.company_id, role: s.role }), staff: { id: s.id, name: s.name, role: s.role } });
+    res.json({ token: sign({ kind: 'staff', staffId: s.id, companyId: s.company_id, role: s.role }), staff: { id: s.id, name: s.name, role: s.role, language: s.language } });
   }));
 
   // ---------- trips ----------
@@ -130,12 +143,13 @@ export function createApp() {
     if (!isCareGroup(careGroup)) return { error: `careGroup must be one of ${Object.keys(CARE_GROUPS).join(', ')}` };
     if (!b.name) return { error: 'name is required' };
     if (!b.consent) return { error: 'consent to location tracking is required (PDPA)' };
+    if (b.language && !isLanguage(b.language)) return { error: 'unsupported language' };
     return { careGroup };
   }
   const insertMember = (db, tripId, b, careGroup, device) => db.query(
-    `INSERT INTO members(trip_id, name, care_group, birth_year, emergency_name, emergency_phone, medical_note, consent_at, device)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,now(),$8) RETURNING ${MEMBER_COLS}`,
-    [tripId, b.name, careGroup, b.birthYear ?? null, b.emergencyName ?? null, b.emergencyPhone ?? null, b.medicalNote ?? null, device]);
+    `INSERT INTO members(trip_id, name, care_group, birth_year, emergency_name, emergency_phone, medical_note, consent_at, device, language)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,now(),$8,$9) RETURNING ${MEMBER_COLS}, language`,
+    [tripId, b.name, careGroup, b.birthYear ?? null, b.emergencyName ?? null, b.emergencyPhone ?? null, b.medicalNote ?? null, device, b.language ?? 'th']);
 
   // Tourist with a phone joins by code.
   app.post('/api/join', h(async (req, res) => {
@@ -188,7 +202,9 @@ export function createApp() {
     if (!(await canAccessTrip(req.auth, req.params.id))) return bad(res, 'trip not found', 404);
     const before = Number(req.query.before) || Number.MAX_SAFE_INTEGER;
     const { rows } = await q(
-      `SELECT msg.*, COALESCE(s.name, m.name) AS sender_name FROM messages msg
+      `SELECT msg.*, COALESCE(s.name, m.name) AS sender_name,
+              COALESCE((SELECT json_object_agg(t.lang, t.body) FROM message_translations t WHERE t.message_id=msg.id), '{}') AS translations
+         FROM messages msg
          LEFT JOIN staff s ON msg.sender_kind='staff' AND s.id=msg.sender_id
          LEFT JOIN members m ON msg.sender_kind='member' AND m.id=msg.sender_id
         WHERE msg.trip_id=$1 AND msg.id < $2 ORDER BY msg.id DESC LIMIT 50`, [req.params.id, before]);
@@ -201,12 +217,16 @@ export function createApp() {
     if (!body) return bad(res, 'body is required');
     const kind = req.auth.kind;
     const senderId = kind === 'staff' ? req.auth.staffId : req.auth.memberId;
+    const { rows: [n] } = await q(kind === 'staff' ? 'SELECT name, language FROM staff WHERE id=$1' : 'SELECT name, language FROM members WHERE id=$1', [senderId]);
+    // lang = the language the sender chose in the picker (defaults to the one they read in)
+    const lang = req.body?.lang ?? n?.language ?? 'th';
+    if (!isLanguage(lang)) return bad(res, 'unsupported language');
     const { rows: [msg] } = await q(
-      `INSERT INTO messages(trip_id, sender_kind, sender_id, body) VALUES ($1,$2,$3,$4) RETURNING *`,
-      [req.params.id, kind, senderId, body]);
-    const { rows: [n] } = await q(kind === 'staff' ? 'SELECT name FROM staff WHERE id=$1' : 'SELECT name FROM members WHERE id=$1', [senderId]);
-    const out = { ...msg, sender_name: n?.name };
+      `INSERT INTO messages(trip_id, sender_kind, sender_id, body, lang) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [req.params.id, kind, senderId, body, lang]);
+    const out = { ...msg, sender_name: n?.name, translations: {} };
     broadcast(req.params.id, 'message', out);
+    translateInBackground(msg);
     res.status(201).json(out);
   }));
 

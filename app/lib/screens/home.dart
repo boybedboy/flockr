@@ -52,6 +52,9 @@ class TripState extends ChangeNotifier {
     switch (e['type']) {
       case 'message':
         messages.add(d);
+      case 'translation':
+        final m = messages.where((m) => m['id'] == d['messageId']).firstOrNull;
+        if (m != null) m['translations'] = {...(m['translations'] as Map? ?? {}), d['lang']: d['body']};
       case 'position':
         final m = members.where((m) => m['id'] == d['memberId']).firstOrNull;
         if (m != null) {
