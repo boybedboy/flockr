@@ -8,7 +8,7 @@ workflows:
       flutter: stable
       vars:
         # set API_URL in Codemagic > App settings > Environment variables
-        API_URL: http://10.0.2.2:3100
+        API_URL: http://10.0.2.2:3200
     triggering:
       events: [push]
       branch_patterns:

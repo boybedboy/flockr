@@ -5,7 +5,7 @@ if (!env.JWT_SECRET && env.NODE_ENV === 'production') {
 }
 
 export const config = {
-  port: Number(env.PORT ?? 3100),
+  port: Number(env.PORT ?? 3200),
   databaseUrl: env.DATABASE_URL ?? 'postgres://flockr:flockr@localhost:5433/flockr',
   jwtSecret: env.JWT_SECRET ?? 'dev-only-secret-change-me',
   // how often the signal-lost sweep runs

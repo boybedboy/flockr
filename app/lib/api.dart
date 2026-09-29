@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// Change at build time: flutter run --dart-define=API=https://api.flockr.app
-const apiBase = String.fromEnvironment('API', defaultValue: 'http://10.0.2.2:3100');
+const apiBase = String.fromEnvironment('API', defaultValue: 'http://10.0.2.2:3200');
 
 class ApiError implements Exception {
   final int status;

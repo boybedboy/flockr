@@ -1,7 +1,7 @@
 // End-to-end check against a running server: node scripts/smoke.js [baseUrl]
 import WebSocket from 'ws';
 
-const base = process.argv[2] ?? 'http://localhost:3100';
+const base = process.argv[2] ?? 'http://localhost:3200';
 const call = async (method, path, body, token) => {
   const r = await fetch(base + path, {
     method,

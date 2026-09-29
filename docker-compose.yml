@@ -19,9 +19,9 @@ services:
     environment:
       DATABASE_URL: postgres://flockr:flockr@db:5432/flockr
       JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me}
-      PORT: 3100
+      PORT: 3200
     ports:
-      - "3100:3100"
+      - "3200:3200"
     depends_on:
       db:
         condition: service_healthy

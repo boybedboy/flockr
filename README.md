@@ -15,7 +15,7 @@ flockr/
 docker compose up -d db          # PostGIS บนพอร์ต 5433
 cd server
 npm install
-npm start                        # http://localhost:3100 (รัน migration ให้เองตอนเปิด)
+npm start                        # http://localhost:3200 (รัน migration ให้เองตอนเปิด)
 npm test                         # ทดสอบการคำนวณรัศมี
 node scripts/smoke.js            # ทดสอบทั้งระบบกับ server ที่รันอยู่
 ```
@@ -61,7 +61,7 @@ node scripts/smoke.js            # ทดสอบทั้งระบบกั
 cd app
 flutter create --org app.flockr --platforms android,ios .   # สร้างโฟลเดอร์ android/ios โดยไม่ทับ lib/
 flutter pub get
-flutter run --dart-define=API=http://10.0.2.2:3100          # Android emulator
+flutter run --dart-define=API=http://10.0.2.2:3200          # Android emulator
 ```
 
 ต้องเพิ่มสิทธิ์เองหลังรัน `flutter create`:
