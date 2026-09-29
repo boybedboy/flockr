@@ -68,7 +68,7 @@ class _MarkPainter extends CustomPainter {
         paint);
     v(10, 40, p(bird));
     v(42, 26, p(bird));
-    v(26, 70, p(bird.withOpacity(.6)));
+    v(26, 70, p(bird.withValues(alpha: .6)));
     v(58, 60, p(accent));
   }
 

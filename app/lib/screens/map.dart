@@ -39,7 +39,7 @@ class _MapTabState extends State<MapTab> {
             TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'app.flockr'),
             if (c != null)
               CircleLayer(circles: [
-                CircleMarker(point: c, radius: r, useRadiusInMeter: true, color: Brand.red.withOpacity(.10), borderColor: Brand.red, borderStrokeWidth: 2),
+                CircleMarker(point: c, radius: r, useRadiusInMeter: true, color: Brand.red.withValues(alpha: .10), borderColor: Brand.red, borderStrokeWidth: 2),
               ]),
             MarkerLayer(markers: [
               for (final m in located)

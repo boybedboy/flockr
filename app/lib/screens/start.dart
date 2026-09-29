@@ -102,7 +102,7 @@ class _StartScreenState extends State<StartScreen> {
                 ChoiceChip(
                   label: Text(g.label),
                   selected: careGroup == g.key,
-                  selectedColor: g.color.withOpacity(.2),
+                  selectedColor: g.color.withValues(alpha: .2),
                   onSelected: (_) => setState(() => careGroup = g.key),
                 ),
             ]),

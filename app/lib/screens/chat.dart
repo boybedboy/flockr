@@ -87,7 +87,7 @@ class _SystemNote extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(color: c.withOpacity(.1), border: Border.all(color: c), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: c.withValues(alpha: .1), border: Border.all(color: c), borderRadius: BorderRadius.circular(12)),
       child: Text(m['body'], style: TextStyle(color: c, fontWeight: FontWeight.w600)),
     );
   }

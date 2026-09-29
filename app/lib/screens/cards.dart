@@ -55,10 +55,12 @@ class _CardsTabState extends State<CardsTab> {
       } catch (_) {
         msg = 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้';
       }
-      if (mounted) setState(() {
-        waiting = false;
-        status = msg;
-      });
+      if (mounted) {
+        setState(() {
+          waiting = false;
+          status = msg;
+        });
+      }
     });
   }
 
@@ -128,7 +130,7 @@ class _CardsTabState extends State<CardsTab> {
         const SizedBox(height: 10),
         Wrap(spacing: 6, children: [
           for (final g in CareGroup.all)
-            ChoiceChip(label: Text(g.label), selected: careGroup == g.key, selectedColor: g.color.withOpacity(.2), onSelected: (_) => setState(() => careGroup = g.key)),
+            ChoiceChip(label: Text(g.label), selected: careGroup == g.key, selectedColor: g.color.withValues(alpha: .2), onSelected: (_) => setState(() => careGroup = g.key)),
         ]),
         TextField(controller: phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'เบอร์ผู้ปกครอง / ผู้ติดต่อฉุกเฉิน')),
         TextField(controller: medical, decoration: const InputDecoration(labelText: 'แพ้ยา / โรคประจำตัว')),

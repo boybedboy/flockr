@@ -43,7 +43,7 @@ class _MembersTabState extends State<MembersTab> {
                   final limit = ((s.radius * (_factor[g.key] ?? 1)) / 10).round() * 10;
                   final state = m['fence_state'];
                   return ListTile(
-                    leading: CircleAvatar(backgroundColor: g.color.withOpacity(.15), child: Text(m['name'][0], style: TextStyle(color: g.color))),
+                    leading: CircleAvatar(backgroundColor: g.color.withValues(alpha: .15), child: Text(m['name'][0], style: TextStyle(color: g.color))),
                     title: Row(children: [
                       Flexible(child: Text(m['name'], overflow: TextOverflow.ellipsis)),
                       const SizedBox(width: 6),
@@ -57,7 +57,7 @@ class _MembersTabState extends State<MembersTab> {
                         '${m['checked_in_at'] != null ? ' · ✓ ขึ้นรถแล้ว' : ''}'),
                     trailing: Chip(
                       label: Text({'out': 'ออกนอก', 'lost': 'สัญญาณหาย'}[state] ?? 'ในพื้นที่'),
-                      backgroundColor: state == 'in' ? Brand.ok.withOpacity(.12) : Brand.alert.withOpacity(.15),
+                      backgroundColor: state == 'in' ? Brand.ok.withValues(alpha: .12) : Brand.alert.withValues(alpha: .15),
                       labelStyle: TextStyle(color: state == 'in' ? Brand.ok : Brand.alert, fontSize: 12),
                     ),
                   );
@@ -69,6 +69,6 @@ class _MembersTabState extends State<MembersTab> {
 
   Widget _chip(String key, String label, Color c) => Padding(
         padding: const EdgeInsets.only(right: 6),
-        child: ChoiceChip(label: Text(label), selected: filter == key, selectedColor: c.withOpacity(.2), onSelected: (_) => setState(() => filter = key)),
+        child: ChoiceChip(label: Text(label), selected: filter == key, selectedColor: c.withValues(alpha: .2), onSelected: (_) => setState(() => filter = key)),
       );
 }
